@@ -37,12 +37,18 @@ def load_database():
         raw = json.load(f)
     face_db = []
     for product in raw:
-        encodings = [np.array(face["encoding"]) for face in product.get("faces", [])]
+        faces = product.get("faces", [])
+        encodings = [np.array(face["encoding"]) for face in faces]
+        
+        # ফিক্স: ডেটাবেস থেকে ইমেজের লিংকটা বের করে আনা হচ্ছে
+        image_url = faces[0]["source_image"] if faces and "source_image" in faces[0] else ""
+
         if encodings:
             face_db.append({
                 "product_id":   product["product_id"],
                 "product_name": product["product_name"],
                 "product_url":  product["product_url"],
+                "image_url":    image_url, # <-- ইমেজের লিংক মেমরিতে সেভ করা হলো
                 "encodings":    encodings,
             })
     gc.collect()
@@ -254,6 +260,7 @@ async def search_face(file: UploadFile = File(...)):
             "product_id":   best_match["product_id"],
             "product_name": best_match["product_name"],
             "product_url":  best_match["product_url"],
+            "image_url":    best_match.get("image_url", ""), # <-- ফিক্স: ইমেজের লিংক রেজাল্টে পাঠানো হচ্ছে
             "confidence":   confidence,
         }
     return {"found": False, "message": "No matching model found."}
